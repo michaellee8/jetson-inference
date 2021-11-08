@@ -16,7 +16,7 @@ LEFT_SONIC_ECHO_PIN = 64  # A10 PK2
 LEFT_SONIC_TRIG_PIN = 65  # A11 PK3
 
 RIGHT_SONIC_ECHO_PIN = 60  # A6 PF6
-LEFT_SONIC_TRIG_PIN = 61  # A7 PF7
+RIGHT_SONIC_TRIG_PIN = 61  # A7 PF7
 
 NORMAL_PWM = 100
 
@@ -53,6 +53,33 @@ PWM_PINS = [12, 8, 9, 5]
 DIRA_PINS = [34, 37, 43, 58]
 DIRB_PINS = [35, 36, 42, 59]
 
+parser = argparse.ArgumentParser(description="Locate objects in a live camera stream using an object detection DNN.", \
+    formatter_class=argparse.RawTextHelpFormatter, epilog=jetson.inference.detectNet.Usage() +\
+    jetson.utils.videoSource.Usage() + jetson.utils.videoOutput.Usage() + jetson.utils.logUsage())
+
+# python3 detectnet_20210723_USB.py --model=$NET/ssd-mobilenet.onnx --label=$NET/labels.txt --input-blob=input_0 --output-cvg=scores --output-bbox=boxes csi://0
+
+#More arguments (For commandline arguments)
+parser.add_argument("input_URI", type=str, default="", nargs='?', help="URI of the input stream")
+parser.add_argument("output_URI", type=str, default="", nargs='?', help="URI of the output stream")
+parser.add_argument("--network", type=str, default="ssd-mobilenet-v2", help="pre-trained model to load (see below for options)")
+parser.add_argument("--overlay", type=str, default="box,labels,conf", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
+parser.add_argument("--threshold", type=float, default=0.5, help="minimum detection threshold to use") 
+
+#Print help when no arguments given
+try:
+    opt = parser.parse_known_args()[0]
+except:
+    print("")
+    parser.print_help()
+    sys.exit(0)
+
+# # load the object detection network
+# net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
+
+# # create video sources & outputs
+# input = jetson.utils.videoSource(opt.input_URI, argv=sys.argv)
+# output = jetson.utils.videoOutput(opt.output_URI, argv=sys.argv+is_headless)
 
 def execute_movement_vector(board: pymata4.Pymata4, vec: List[float]):
     for motor_index in range(4):
@@ -80,6 +107,10 @@ def execute_pan_angle(board: pymata4.Pymata4, angle: int):
     current_pan_angle = angle
     board.servo_write(SERVO_PAN_PIN, clamp_angle(angle))
 
+def execute_tilt_angle(board: pymata4.Pymata4, angle: int):
+    current_tilt_angle = angle
+    board.servo_write(SERVO_TILT_PIN, clamp_angle(angle))
+
 
 def times_list(l: List[float], co: float) -> List[float]:
     return [ele * co for ele in l]
@@ -101,17 +132,24 @@ for pin in PWM_PINS:
 
 board.set_pin_mode_servo(SERVO_PAN_PIN)
 board.set_pin_mode_servo(SERVO_TILT_PIN)
+board.set_pin_mode_sonar(LEFT_SONIC_TRIG_PIN, LEFT_SONIC_ECHO_PIN)
+board.set_pin_mode_sonar(RIGHT_SONIC_TRIG_PIN, RIGHT_SONIC_ECHO_PIN)
+
+# [START] prep done
+#######################################
+# Main code start
+#######################################
 
 
 # print(board.get_firmata_version())
 
 # execute_movement_vector(board, [-2.0, 2.0, -2.0, 2.0])
 
-execute_movement_vector(board, times_list([-1, -1, 1, 1], 2))
+# execute_movement_vector(board, times_list([-1, -1, 1, 1], 2))
 
-sleep(5)
+# sleep(5)
 
-execute_movement_vector(board, [0.0, 0.0, 0.0, 0.0])
+# execute_movement_vector(board, [0.0, 0.0, 0.0, 0.0])
 
 # board.set_pin_mode_servo(SERVO_PAN_PIN)
 
@@ -120,6 +158,12 @@ execute_movement_vector(board, [0.0, 0.0, 0.0, 0.0])
 #     board.servo_write(SERVO_PAN_PIN, angle)
 #     angle += 1
 #     sleep(0.1)
+
+while True:
+    left_dist = board.sonar_read(LEFT_SONIC_TRIG_PIN)
+    right_dist = board.sonar_read(RIGHT_SONIC_TRIG_PIN)
+    print("left: ", left_dist, ", right: ", right_dist)
+    sleep(5)
 
 
 board.shutdown()
