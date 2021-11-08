@@ -40,9 +40,9 @@ ROTATE_CLOCKWISE_VEC = [1, 1, 1, 1]
 
 ROTATE_ANTICLOCKWISE_VEC = [-1, -1, -1, -1]
 
-LEFT_VEC = [-1,-1,1,1]
+LEFT_VEC = [-1, -1, 1, 1]
 
-RIGHT_VEC = [1,1,-1,-1]
+RIGHT_VEC = [1, 1, -1, -1]
 
 
 STOP_VEC = [0, 0,
@@ -67,6 +67,7 @@ def execute_movement_vector(board: pymata4.Pymata4, vec: List[float]):
         board.pwm_write(PWM_PINS[motor_index], outn)
     return
 
+
 def clamp_angle(angle: int) -> int:
     if angle < MIN_ANGLE:
         return MIN_ANGLE
@@ -74,9 +75,11 @@ def clamp_angle(angle: int) -> int:
         return MAX_ANGLE
     return angle
 
+
 def execute_pan_angle(board: pymata4.Pymata4, angle: int):
     current_pan_angle = angle
     board.servo_write(SERVO_PAN_PIN, clamp_angle(angle))
+
 
 def times_list(l: List[float], co: float) -> List[float]:
     return [ele * co for ele in l]
@@ -104,7 +107,7 @@ board.set_pin_mode_servo(SERVO_TILT_PIN)
 
 # execute_movement_vector(board, [-2.0, 2.0, -2.0, 2.0])
 
-execute_movement_vector(board, times_list([-1,-1,1,1], 2))
+execute_movement_vector(board, times_list([-1, -1, 1, 1], 2))
 
 sleep(5)
 
