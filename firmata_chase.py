@@ -138,8 +138,8 @@ def execute_tilt_angle(board: pymata4.Pymata4, angle: int):
 def times_list(l: List[float], co: float) -> List[float]:
     return [ele * co for ele in l]
 
-def sum_list(*lists) -> List[float]:
-    return [sum(n) for n in zip(**lists)]
+def sum_list(*lists: List[float]) -> List[float]:
+    return [sum(n) for n in zip(*lists)]
 
 
 board = pymata4.Pymata4(arduino_instance_id=2)
