@@ -197,7 +197,21 @@ while True:
     detections = net.Detect(img, overlay=opt.overlay)
     car_det = [det for det in detections if det.ClassID == CLASS_car][0]
     car_center = car_det.Center
-    if car_center <= 
+    if car_center <= img.width / 2:
+        # center of car at left
+        last_seen_car_side = Side.LEFT
+    else:
+        # center of car at right
+        last_seen_car_side = Side.RIGHT
+    
+    wheel_dets = [det for det in detections if det.ClassID == CLASS_wheel]
+    if len(wheel_dets) > 1:
+        # Strange, should not get two wheels at same time
+        print("[STRANGE] Seen two wheels at same time")
+    else:
+        wheel_det = wheel_dets[0]
+        wheel_center = wheel.
+
         
     
     sleep(1)
