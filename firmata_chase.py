@@ -2,6 +2,7 @@ from typing import List
 from pymata4 import pymata4
 from time import sleep
 from math import floor
+from enum import Enum
 import jetson.inference
 import jetson.utils
 
@@ -18,7 +19,19 @@ LEFT_SONIC_TRIG_PIN = 65  # A11 PK3
 RIGHT_SONIC_ECHO_PIN = 60  # A6 PF6
 RIGHT_SONIC_TRIG_PIN = 61  # A7 PF7
 
+
+
+
 NORMAL_PWM = 100
+
+BACKGROUND = 0
+background = 1
+car = 2
+sonic = 3
+wheel = 4
+santa = 5
+wheel_back = 6
+santa_back = 7
 
 FORWARD_COEFFICIENT = 1
 ROTATE_COEFFICIENT = 1
@@ -57,14 +70,15 @@ parser = argparse.ArgumentParser(description="Locate objects in a live camera st
     formatter_class=argparse.RawTextHelpFormatter, epilog=jetson.inference.detectNet.Usage() +\
     jetson.utils.videoSource.Usage() + jetson.utils.videoOutput.Usage() + jetson.utils.logUsage())
 
-# python3 detectnet_20210723_USB.py --model=$NET/ssd-mobilenet.onnx --label=$NET/labels.txt --input-blob=input_0 --output-cvg=scores --output-bbox=boxes csi://0
+# python3 detectnet_20210723_USB.py --model=$NET/ssd-mobilenet.onnx --label=$NET/labels.txt --input-blob=input_0 --output-cvg=scores --output-bbox=boxes --input_URI=csi://0
 
 #More arguments (For commandline arguments)
-parser.add_argument("input_URI", type=str, default="", nargs='?', help="URI of the input stream")
+parser.add_argument("input_URI", type=str, default="csi://0", nargs='?', help="URI of the input stream")
+
 parser.add_argument("output_URI", type=str, default="", nargs='?', help="URI of the output stream")
 parser.add_argument("--network", type=str, default="ssd-mobilenet-v2", help="pre-trained model to load (see below for options)")
 parser.add_argument("--overlay", type=str, default="box,labels,conf", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
-parser.add_argument("--threshold", type=float, default=0.5, help="minimum detection threshold to use") 
+parser.add_argument("--threshold", type=float, default=0.3, help="minimum detection threshold to use") 
 
 #Print help when no arguments given
 try:
@@ -74,12 +88,21 @@ except:
     parser.print_help()
     sys.exit(0)
 
-# # load the object detection network
-# net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
+print("capturing", opt.input_URI)
 
-# # create video sources & outputs
-# input = jetson.utils.videoSource(opt.input_URI, argv=sys.argv)
+# load the object detection network
+net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
+
+# create video sources & outputs
+input = jetson.utils.videoSource(opt.input_URI, argv=sys.argv)
 # output = jetson.utils.videoOutput(opt.output_URI, argv=sys.argv+is_headless)
+
+print("got video source")
+
+cam_height = input.GetHeight()
+cam_width = input.GetWidth()
+
+print("cam w h", cam_width, cam_height)
 
 def execute_movement_vector(board: pymata4.Pymata4, vec: List[float]):
     for motor_index in range(4):
@@ -116,7 +139,7 @@ def times_list(l: List[float], co: float) -> List[float]:
     return [ele * co for ele in l]
 
 
-board = pymata4.Pymata4()
+board = pymata4.Pymata4(arduino_instance_id=2)
 
 current_pan_angle = 90
 current_tilt_angle = 90
@@ -159,11 +182,27 @@ board.set_pin_mode_sonar(RIGHT_SONIC_TRIG_PIN, RIGHT_SONIC_ECHO_PIN)
 #     angle += 1
 #     sleep(0.1)
 
+
+class Side(Enum):
+    NONE: str = "none"
+    LEFT: str = "left"
+    RIGHT: str = "right"
+
+last_seen_car_side: Side = Side.NONE
+last_seen_car_direction: Side = Side.NONE
+
 while True:
-    left_dist = board.sonar_read(LEFT_SONIC_TRIG_PIN)
-    right_dist = board.sonar_read(RIGHT_SONIC_TRIG_PIN)
-    print("left: ", left_dist, ", right: ", right_dist)
-    sleep(5)
+
+    img = input.Capture()
+    detections = net.Detect(img, overlay=opt.overlay)
+    car_det = 
+        
+    
+    sleep(1)
+    # left_dist = board.sonar_read(LEFT_SONIC_TRIG_PIN)
+    # right_dist = board.sonar_read(RIGHT_SONIC_TRIG_PIN)
+    # print("left: ", left_dist, ", right: ", right_dist)
+    # sleep(5)
 
 
 board.shutdown()
