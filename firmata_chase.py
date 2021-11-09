@@ -24,14 +24,14 @@ RIGHT_SONIC_TRIG_PIN = 61  # A7 PF7
 
 NORMAL_PWM = 100
 
-BACKGROUND = 0
-background = 1
-car = 2
-sonic = 3
-wheel = 4
-santa = 5
-wheel_back = 6
-santa_back = 7
+CLASS_BACKGROUND = 0
+CLASS_background = 1
+CLASS_car = 2
+CLASS_sonic = 3
+CLASS_wheel = 4
+CLASS_santa = 5
+CLASS_wheel_back = 6
+CLASS_santa_back = 7
 
 FORWARD_COEFFICIENT = 1
 ROTATE_COEFFICIENT = 1
@@ -195,7 +195,9 @@ while True:
 
     img = input.Capture()
     detections = net.Detect(img, overlay=opt.overlay)
-    car_det = 
+    car_det = [det for det in detections if det.ClassID == CLASS_car][0]
+    car_center = car_det.Center
+    if car_center <= 
         
     
     sleep(1)
