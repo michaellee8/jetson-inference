@@ -40,6 +40,8 @@ SIDE_COEFFICIENT = 0.1
 MAX_ANGLE = 135
 MIN_ANGLE = 45
 
+NOT_SEEN_ROTATION_SPEED = 0.5
+
 # A B
 # C D
 #  |
@@ -78,7 +80,7 @@ parser.add_argument("input_URI", type=str, default="csi://0", nargs='?', help="U
 parser.add_argument("output_URI", type=str, default="", nargs='?', help="URI of the output stream")
 parser.add_argument("--network", type=str, default="ssd-mobilenet-v2", help="pre-trained model to load (see below for options)")
 parser.add_argument("--overlay", type=str, default="box,labels,conf", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
-parser.add_argument("--threshold", type=float, default=0.3, help="minimum detection threshold to use") 
+parser.add_argument("--threshold", type=float, default=0.5, help="minimum detection threshold to use") 
 
 #Print help when no arguments given
 try:
@@ -187,9 +189,9 @@ board.set_pin_mode_sonar(RIGHT_SONIC_TRIG_PIN, RIGHT_SONIC_ECHO_PIN)
 
 
 class Side(Enum):
-    NONE: str = "none"
-    LEFT: str = "left"
-    RIGHT: str = "right"
+    NONE: int = 0
+    LEFT: int = -1
+    RIGHT: int = 1
 
 last_seen_car_side: Side = Side.NONE
 last_seen_car_direction: Side = Side.RIGHT
@@ -211,6 +213,9 @@ while True:
     else:
         # car not detected
         # Start rotation
+        rot_vec = ROTATE_ANTICLOCKWISE_VEC if last_seen_car_side == Side.LEFT else ROTATE_CLOCKWISE_VEC
+        motor_vec = times_list(rot_vec, NOT_SEEN_ROTATION_SPEED)
+        execute_movement_vector(motor_vec)
         
     
     wheel_dets = [det for det in detections if det.ClassID == CLASS_wheel]
@@ -224,13 +229,14 @@ while True:
             last_seen_car_direction = Side.LEFT
         else:
             last_seen_car_direction = Side.RIGHT
-    
 
+    forward_vec = times_list(FORWARD_VEC, FORWARD_COEFFICIENT * 1.2)
+    rot_vec = times_list(ROTATE_CLOCKWISE_VEC, last_seen_car_side * 0.3)
+    motor_vec = sum_list(forward_vec + rot_vec)
+
+    execute_movement_vector(motor_vec)
     
     
-        
-    
-    sleep(1)
     # left_dist = board.sonar_read(LEFT_SONIC_TRIG_PIN)
     # right_dist = board.sonar_read(RIGHT_SONIC_TRIG_PIN)
     # print("left: ", left_dist, ", right: ", right_dist)
