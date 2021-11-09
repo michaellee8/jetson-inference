@@ -138,6 +138,9 @@ def execute_tilt_angle(board: pymata4.Pymata4, angle: int):
 def times_list(l: List[float], co: float) -> List[float]:
     return [ele * co for ele in l]
 
+def sum_list(*lists) -> List[float]:
+    return [sum(n) for n in zip(**lists)]
+
 
 board = pymata4.Pymata4(arduino_instance_id=2)
 
@@ -189,29 +192,42 @@ class Side(Enum):
     RIGHT: str = "right"
 
 last_seen_car_side: Side = Side.NONE
-last_seen_car_direction: Side = Side.NONE
+last_seen_car_direction: Side = Side.RIGHT
 
 while True:
 
     img = input.Capture()
     detections = net.Detect(img, overlay=opt.overlay)
-    car_det = [det for det in detections if det.ClassID == CLASS_car][0]
-    car_center = car_det.Center
-    if car_center <= img.width / 2:
-        # center of car at left
-        last_seen_car_side = Side.LEFT
+    car_dets = [det for det in detections if det.ClassID == CLASS_car]
+    if len(card_dets) != 1:
+        car_det = car_dets[0]
+        car_center = car_det.Center
+        if car_center[0] <= img.width / 2:
+            # center of car at left
+            last_seen_car_side = Side.LEFT
+        else:
+            # center of car at right
+            last_seen_car_side = Side.RIGHT
     else:
-        # center of car at right
-        last_seen_car_side = Side.RIGHT
+        # car not detected
+        # Start rotation
+        
     
     wheel_dets = [det for det in detections if det.ClassID == CLASS_wheel]
-    if len(wheel_dets) > 1:
-        # Strange, should not get two wheels at same time
+    if len(wheel_dets) != 1:
+        # Strange, should not get two wheels or no wheel
         print("[STRANGE] Seen two wheels at same time")
     else:
         wheel_det = wheel_dets[0]
-        wheel_center = wheel.
+        wheel_center = wheel.det.Center
+        if wheel_center[0] <= car_center[0]:
+            last_seen_car_direction = Side.LEFT
+        else:
+            last_seen_car_direction = Side.RIGHT
+    
 
+    
+    
         
     
     sleep(1)
